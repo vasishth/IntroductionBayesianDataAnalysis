@@ -9,6 +9,7 @@ fontsize: 12pt
 geometry: "a4paper,right=8.5cm,left=1cm,bottom=2cm,top=2cm"
 ---
 
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
@@ -66,7 +67,7 @@ The terms here have the following meaning. We elaborate on each point with an ex
 Two examples will clarify all these terms.
 
 
-# Deriving the posterior using Bayes' rule: An analytical example 
+# An analytical example (Beta-Binomial)
 
 Recall our cloze probability example earlier. Subjects are shown sentences like
 
@@ -509,3 +510,313 @@ This toy example illustrates an important point that has great practical importa
 One can incrementally gain information about a research question by using information from previous studies and deriving a posterior, and then use that posterior as a prior for the next study. This approach allows us to build on the information available  from previous work.
 
 
+# A second analytical example (Poisson-Gamma)
+
+Suppose we are modeling the total number of regressions 
+(leftward eye movements) per word in an eyetracking study 
+(data from Vasishth et al., 2011):
+
+
+```{r}
+dat<-read.table(file="data/TRCexample.txt",header=TRUE)
+head(dat,n=3)
+```
+
+\small
+Source: Shravan Vasishth, Katja Suckow, Richard L. Lewis, and Sabine Kern. Short-term forgetting in sentence comprehension: Crosslinguistic evidence from head-final structures. Language and Cognitive Processes, 25:533--567, 2011
+\normalsize
+
+```{r}
+summary(dat$value)
+```
+
+- The number of times $x$ that regressions occurred from a word can be modeled by a Poisson distribution:
+- The Poisson distribution (discrete) has one parameter (the rate):
+
+\begin{equation}
+f(x\mid \lambda) = \frac{\exp(-\lambda) \lambda^x}{x!}
+\end{equation}
+- The rate (the mean no.\ of regressions per word) $\lambda>0$ is unknown
+- $x\geq 0$ (a vector): the observed numbers of regressions per word are independent given $\lambda$
+
+Simulated data (n=10, number of data points):
+
+```{r}
+(x<-rpois(n=10,lambda=3))
+```
+
+Visualization with $\lambda=3$:
+
+```{r,echo=FALSE,fig.height=4}
+x<-rpois(n=1000,lambda=3)
+plot(x,dpois(x,lambda=3),ylab="Probability")
+```
+
+- Suppose that prior research (or expert knowledge) suggests that the prior mean of $\lambda$ is 3 and prior variance for $\lambda$  is 1.5. 
+- The first step is to define a PDF for $\lambda$; this will reflect our prior belief, before seeing any new data. 
+- One good choice (but not the only possible choice!) is the gamma(a,b) distribution.
+
+**Note: I will talk about the choice of prior in Bayesian analyses later.**
+
+
+The gamma PDF (continuous) for some variable $x$ (parameters $a,b >0$):
+
+\begin{equation}
+  f(x\mid a,b) =
+    \begin{cases}
+      \frac{b^a\exp(-bx) x^{a-1}}{\Gamma(a)} & \text{if } x\geq 0\\
+      0 & \text{if } x<0\\
+    \end{cases}       
+\end{equation}
+
+Here, $\Gamma(a)=(a-1)!$ for integer values of $a$. $\frac{b^a}{\Gamma(a)}$ is the normalizing constant.
+
+In R, the a,b parameters are called shape and rate, respectively.
+
+
+Simulated data from Gamma(a=3,b=1):
+
+```{r}
+round(rgamma(n=10,shape=3,rate=1),2)
+```
+
+Visualize the gamma PDF with a=3,b=1:
+
+```{r,echo=FALSE,fig.height=4}
+x<-seq(0,10,by=0.01)
+plot(x,dgamma(x,shape=3,rate=1),
+     type="l",
+     ylab="density")
+```
+
+
+In order to decide on the prior:
+
+$$\lambda \sim Gamma(a,b)$$
+
+
+we first need to figure out the parameters for a gamma density prior.
+
+
+Key question: What should  the parameters a,b be? We know that
+
+- In a gamma PDF with parameters a, b, the mean is  $\frac{a}{b}$ and the variance is
+$\frac{a}{b^2}$
+- Suppose we know that the mean and variance of $\lambda$ from prior research is 3 and 1.5
+- Solve for a,b, which gives us the parameters we need for the gamma prior on $\lambda$. 
+
+\begin{equation}
+\frac{a}{b} = 3
+\end{equation}
+
+\begin{equation}
+\frac{a}{b^2} = 1.5
+\end{equation}
+
+
+Just solve for a and b (exercise).
+
+Result: $a=6, b=2$.
+
+
+The prior on $\lambda$ is:
+
+\begin{equation}
+\lambda \sim Gamma(a=6,b=2)
+\end{equation}
+
+```{r,echo=FALSE,fig.height=3}
+x<-seq(0,10,by=0.01)
+plot(x,dgamma(x,shape=6,rate=2),
+type="l",lty=1,
+main="Gamma prior on lambda",ylab="density")
+```
+
+Cross-check using Monte Carlo simulations that the mean and variance are as they should be:
+
+```{r}
+lambda<-rgamma(10000,shape=6,rate=2)
+
+round(mean(lambda),1)
+round(var(lambda),1)
+```
+
+Given that 
+
+\begin{equation}
+\hbox{Posterior} \propto \hbox{Likelihood}~\hbox{Prior}
+\end{equation}
+
+and given that the PDF we assume for the data is Poisson ($n$ \textbf{independent} data points $\mathbf{x}$):
+
+$$\mathbf{x}=<x_1,\dots,x_n>$$
+
+\begin{equation}
+\begin{split}
+f(\mathbf{x}\mid \lambda) =& \frac{\exp(-\lambda) \lambda^{x_1}}{x_1!} \times \dots \times \frac{\exp(-\lambda) \lambda^{x_n}}{x_n!} \\
+ =& \prod_{i=1}^n \frac{\exp(-\lambda) \lambda^{x_i}}{x_i!}\\
+          =& \frac{\exp(-n\lambda) \lambda^{\sum_i^{n} x_i}}{\prod_{i=1}^n x_i!}\\
+\end{split}          
+\end{equation}
+
+
+Computing the posterior is surprisingly easy now:
+
+\begin{equation}
+\hbox{Posterior} = \left[\frac{\exp(-n\lambda) \lambda^{\sum_i^{n} x_i}}{\mathbf{\prod_{i=1}^n x_i!}}\right]
+\left[ \frac{\mathbf{b^a }\lambda^{a-1}\exp(-b\lambda)}{\mathbf{\Gamma(a)}} \right]
+\end{equation}
+
+The terms $x!,\Gamma(a), b^a$ do not involve $\lambda$ and make up the normalizing constants; we can drop these.
+
+This gives us the posterior **up to proportionality**:
+
+
+\begin{equation}
+\begin{split}
+\hbox{Posterior} \propto &  \exp(-n\lambda)  \lambda^{\sum_i^{n} x_i} \lambda^{a-1}\exp(-b\lambda)\\
+=& \lambda^{a-1+\sum_i^{n} x_i} \exp(-\lambda (b+n))
+\end{split}
+\end{equation}
+
+\begin{equation}
+\begin{split}
+\hbox{Posterior} \propto &  \exp(-n\lambda)  \lambda^{\sum_i^{n} x_i} \lambda^{a-1}\exp(-b\lambda)\\
+=& \lambda^{a-1+\sum_i^{n} x_i} \exp(-\lambda (b+n))
+\end{split}
+\end{equation}
+
+- First, note that the gamma distribution in general is $Gamma(a,b) \propto \lambda^{a-1} \exp(-\lambda b)$. 
+- So it's enough to state the above as a gamma distribution with some updated parameters a*, b*.
+
+If we equate $a^{*}-1=a-1+\sum_i^{n} x_i$ and $b^{*} = b+n$, we can rewrite the above as:
+
+\begin{equation}
+\lambda^{a^{*}-1} \exp(-\lambda b^{*})
+\end{equation}
+
+
+- This means that $a^{*}=a+\sum_i^{n} x_i$ and $b^{*}=b+n$.
+- We can find a constant $k$ such that the above is a proper probability density function, i.e.:
+
+\begin{equation}
+k \int_{0}^{\infty} \lambda^{a^{*}-1} \exp(-\lambda b^{*})=1
+\end{equation}
+- Thus, the posterior has the form of  a gamma distribution with parameters 
+$a^{*}=a+\sum_i^{n} x_i, b^{*}=b+n$. Hence the Gamma distribution is a conjugate prior for the Poisson.
+
+
+### Concrete example given data
+
+- Suppose the regressive eye movements from one subject on n=5 words is: $2,4,3,6,1$. 
+- The prior we chose was Gamma(a=6,b=2). 
+- $\sum_i^{n} x_i = `r sum(c(2,4,3,6,1))`$ and sample size $n=5$.
+
+It follows that the posterior is 
+
+\begin{equation}
+\begin{split}
+Gamma(a^{*}= a+\sum_i^{n} x_i, b^{*}=b+n) =& 
+Gamma(6+`r sum(c(2,4,3,6,1))`,2+5)\\
+=& Gamma(`r sum(c(6,2,4,3,6,1))`,7)\\
+\end{split}
+\end{equation}
+
+
+- The mean of the posterior is $\frac{a*}{b*}=\frac{22}{7} = `r round(22/7,2)`$
+- The variance is $\frac{a*}{b*^{2}}=\frac{22}{7^2}= `r round(22/(7^2),2)`$
+
+
+-  We saw two examples of conjugate analyses: the binomial-beta and the Poisson-gamma.
+- In each example, we derived the posterior given a likelihood and a prior.
+
+Next: the posterior's mean is a weighted mean of the MLE and the prior mean.
+
+
+We can express the posterior mean as a weighted sum of the prior mean and the maximum likelihood estimate of $\lambda$.
+
+The posterior mean is:
+
+\begin{equation}
+\frac{a*}{b*}=\frac{a + \sum x_i }{n+b}
+\end{equation}
+
+This can be rewritten as
+
+\begin{equation}
+\frac{a*}{b*}=\frac{a + n \bar{x}}{n+b}
+\end{equation}
+
+Dividing both the numerator and denominator by b:
+
+
+\begin{equation}
+\frac{a*}{b*}=\frac{(a + n \bar{x})/b }{(n+b)/b} = \frac{a/b + n\bar{x}/b}{1+n/b}
+\end{equation}
+
+
+Since $a/b$ is the mean $m$ of the prior, we can rewrite this as:
+
+\begin{equation}
+\frac{a/b + n\bar{x}/b}{1+n/b}= \frac{m + \frac{n}{b}\bar{x}}{1+
+\frac{n}{b}}
+\end{equation}
+
+We can rewrite this as:
+
+
+\begin{equation}
+\frac{m + \frac{n}{b}\bar{x}}
+{1+\frac{n}{b}} = \frac{m\times 1}{1+\frac{n}{b}} + \frac{\frac{n}{b}\bar{x}}{1+\frac{n}{b}}
+\end{equation}
+
+
+
+This is a weighted average: setting $w_1=1$ and 
+$w_2=\frac{n}{b}$, we can write the above as:
+
+\begin{equation}
+m \frac{w_1}{w_1+w_2} + \bar{x} \frac{w_2}{w_1+w_2}
+\end{equation}
+
+
+A $n$ approaches infinity, the weight on the prior mean $m$ will tend towards 0, making the posterior mean approach the maximum likelihood estimate of the sample.
+
+
+
+
+
+
+In general, in a Bayesian analysis, as sample size increases, the likelihood will dominate in determining the posterior mean.
+
+Regarding variance, since the variance of the posterior is:
+
+\begin{equation}
+\frac{a*}{b*^2}=\frac{(a + n \bar{x})}{(n+b)^2} 
+\end{equation}
+
+as $n$ approaches infinity, the posterior variance will approach zero: more data will reduce variance (uncertainty). 
+
+
+
+### Stepping back
+
+- We saw two examples where we can do the computations to derive the posterior using simple algebra. 
+- There are several other such simple cases. 
+- **A big insight**: the posterior mean is a compromise between the prior mean and the sample mean.
+- When data are sparse, the prior will dominate in determining the posterior mean.
+- When a lot of data are available, the MLE will dominate in determining the posterior mean.
+- Given sparse data, informative priors based on expert knowledge, existing data, or meta-analysis will play an important role. 
+
+
+
+- In realistic data analysis settings, we can't use these simple conjugate analyses
+- For such cases, we need to use MCMC (Markov chain Monte Carlo) sampling techniques so that we can sample from the posterior distributions of the parameters.
+ 
+Some sampling approaches are:
+
+- Gibbs sampling using inversion sampling
+- Metropolis-Hastings
+- Hamiltonian Monte Carlo
+
+Youtube lecture: https://youtu.be/ymuLt6LBTwY
