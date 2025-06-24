@@ -1,16 +1,9 @@
 ---
-title: "Chapter 3: Regression models"
+title: "Chapter 3: Computational Bayesian data analysis"
 author: "Shravan Vasishth (vasishth.github.io)"
 date: "Textbook: https://bruno.nicenboim.me/bayescogsci/"
 output: 
   pdf_document
-header-includes:
-   - \usepackage{esint}
-   - \usepackage{mathtools}
-   - \makeatletter
-   - \newcommand{\explain}[2]{\underset{\mathclap{\overset{\uparrow}{#2}}}{#1}}
-   - \newcommand{\explainup}[2]{\overset{\mathclap{\underset{\downarrow}{#2}}}{#1}}
-   - \makeatother
 toc: true
 fontsize: 12pt
 geometry: "a4paper,right=8.5cm,left=1cm,bottom=2cm,top=2cm"
@@ -38,6 +31,91 @@ https://bruno.nicenboim.me/bayescogsci/
 https://github.com/bnicenboim/bayescogsci
 
 # Linear modeling 
+
+```{r, include=FALSE}
+short_summary <- function (x, digits = 2, ...)
+{
+  x<- summary(x)
+  cat("...\n")
+    # cat(" Family: ")
+    # cat(summarise_families(x$formula), "\n")
+    # cat("  Links: ")
+    # cat(summarise_links(x$formula, wsp = 9), "\n")
+    # cat("Formula: ")
+    # print(x$formula, wsp = 9)
+    # cat(paste0("   Data: ", x$data_name, " (Number of observations: ",
+        # x$nobs, ") \n"))
+    if (!isTRUE(nzchar(x$sampler))) {
+        cat("\nThe model does not contain posterior samples.\n")
+    }
+    else {
+        final_samples <- ceiling((x$iter - x$warmup)/x$thin *
+            x$chains)
+        # cat(paste0("Samples: ", x$chains, " chains, each with iter = ",
+        #     x$iter, "; warmup = ", x$warmup, "; thin = ", x$thin,
+        #     ";\n", "         total post-warmup samples = ", final_samples,
+        #     "\n\n"))
+        if (nrow(x$prior)) {
+            cat("Priors: \n")
+            print(x$prior, show_df = FALSE)
+            cat("\n")
+        }
+        if (length(x$splines)) {
+            cat("Smooth Terms: \n")
+            brms:::print_format(x$splines, digits)
+            cat("\n")
+        }
+        if (length(x$gp)) {
+            cat("Gaussian Process Terms: \n")
+            brms:::print_format(x$gp, digits)
+            cat("\n")
+        }
+        if (nrow(x$cor_pars)) {
+            cat("Correlation Structures:\n")
+            brms:::print_format(x$cor_pars, digits)
+            cat("\n")
+        }
+        if (length(x$random)) {
+            cat("Group-Level Effects: \n")
+            for (i in seq_along(x$random)) {
+                g <- names(x$random)[i]
+                cat(paste0("~", g, " (Number of levels: ", x$ngrps[[g]],
+                  ") \n"))
+                brms:::print_format(x$random[[g]], digits)
+                cat("\n")
+            }
+        }
+        if (nrow(x$fixed)) {
+            cat("Population-Level Effects: \n")
+            brms:::print_format(x$fixed, digits)
+            cat("\n")
+        }
+        if (length(x$mo)) {
+            cat("Simplex Parameters: \n")
+            brms:::print_format(x$mo, digits)
+            cat("\n")
+        }
+        if (nrow(x$spec_pars)) {
+            cat("Family Specific Parameters: \n")
+            brms:::print_format(x$spec_pars, digits)
+            cat("\n")
+        }
+        if (length(x$rescor_pars)) {
+            cat("Residual Correlations: \n")
+            brms:::print_format(x$rescor, digits)
+            cat("\n")
+        }
+        # cat(paste0("Samples were drawn using ", x$sampler, ". "))
+        if (x$algorithm == "sampling") {
+            #cat(paste0("For each parameter, Bulk_ESS\n", "and Tail_ESS are effective sample size measures, ",
+             #   "and Rhat is the potential\n", "scale reduction factor on split chains ",
+              #  "(at convergence, Rhat = 1)."))
+        }
+        cat("...\n")
+    }
+    invisible(x)
+}
+```
 
 Suppose $y$ is a vector of continuous responses; assume for now that the $y$ are independent and identically distributed:
 
@@ -71,13 +149,13 @@ As a first example, we will fit a simple linear model to some reaction time data
 
 The data frame df_spacebar contains data of a subject pressing the space bar without reading in a self-paced reading experiment.
 
-### Install the library
+## Install the library
 
 Install the library bcogsci. See:
 
 https://github.com/bnicenboim/bcogsci
 
-### Load the data
+## Load the data
 
 ```{r, echo=TRUE,reading_noreading}
 library(bcogsci)
@@ -168,11 +246,13 @@ This would give us a matrix containing nsim * nobs generated data.
 We can then plot the prior predictive densities generated.
 
 
-```{r echo=TRUE}
-library(extraDistr) ## needed for half-normal distribution
+```{r echo=TRUE,message=FALSE}
+## needed for half-normal distribution
+library(extraDistr) 
 ## number of simulations
 nsim<-1000
-## number of observations generated each time:
+## number of observations generated 
+## each time:
 nobs<-100
 y<-matrix(rep(NA,nsim*nobs),ncol = nobs)
 mu<-rnorm(nsim,mean=0,sd=2000)
@@ -285,7 +365,6 @@ m1priorpred<-stan(model_code=priorpred,
 ```{r echo=TRUE}
 ## extract and plot one of the data-sets:
 y_sim<-extract(m1priorpred,pars="y_sim")
-str(y_sim)
 ```
 
 
@@ -298,7 +377,8 @@ hist(y_sim$y_sim[100,],
 
 
 
-Having satisfied ourselves that the priors mostly make sense, we now fit the model to fake data. The goal here is to ensure that the model recovers the true underlying parameters.
+Having satisfied ourselves that the priors mostly make sense, we now fit the model to simulated data generated from known parameter values. The goal here is to ensure that the model recovers the true underlying parameters.
+
 
 ##  Simulated data and modeling
 
@@ -355,7 +435,8 @@ m1rstan<-stan(model_code=m1,
                 iter = 2000)
 
 ## extract posteriors:
-posteriors<-extract(m1rstan,pars=c("mu","sigma"))
+posteriors<-extract(m1rstan,
+            pars=c("mu","sigma"))
 ```
 
 
@@ -494,7 +575,7 @@ Now compute the posterior probability  $Prob(\mu>170)$:
 
 ```{r echo=TRUE,warning=FALSE,message=FALSE}
 mu_post<-posterior_samples(m1brms,
-                           variable=c("b_Intercept"))$b_Int
+         variable=c("b_Intercept"))$b_Int
 mean(mu_post>170)
 ```
 
@@ -505,12 +586,14 @@ mean(mu_post>170)
 The 95% credible interval can be extracted for $\mu$ as follows:
 
 ```{r echo=TRUE}
-posterior_interval(m1brms,variable =c("b_Intercept"))
-posterior_summary(m1brms,variable=c("b_Intercept"))
+posterior_interval(m1brms,
+    variable=c("b_Intercept"))
+posterior_summary(m1brms,
+    variable=c("b_Intercept"))
 ```
 
 
-This type of interval is also known as a *credible interval*. 
+This type of interval is also known as a **credible interval**. 
 
 A credible interval demarcates the range within which we can be certain with a certain probability that the "true value" of a parameter lies given the data and the model.
 
@@ -542,25 +625,33 @@ round(quantile(mu_post,prob=c(0.135,0.865)))
 
 ```{r echo=TRUE}
 priors <- c(set_prior("uniform(0, 5000)", 
-                      class = "Intercept"),
+                      class = "Intercept",
+                      lb = 0,
+                      ub = 5000),
             set_prior("uniform(0, 500)", 
-                      class = "sigma"))
+                      class = "sigma",
+                      lb=0,
+                      ub=500))
 ```
 
 
 
-```{r echo=TRUE,cache=TRUE,message=FALSE,results="hide"}
+```{r echo=TRUE,cache=TRUE,message=FALSE,results="hide",warning=FALSE}
 m2<-brm(t~1,df_spacebar,prior = priors,
-       iter = 2000, chains = 4,family = gaussian(), 
+       iter = 2000, chains = 4,
+       family = gaussian(), 
        control = list(adapt_delta = 0.99))
 ```
 
 
 
-```{r echo=TRUE}
-summary(m2)
-```
+For looking at the results:
 
+\small
+```{r echo=TRUE}
+short_summary(m2)
+```
+\Large
 
 
 In general, we don't want our priors to have too much influence on our
@@ -709,15 +800,22 @@ pp_check(m2,nsamples=100)+
 mu <- 6
 sigma <- 0.5
 N <- 100000
-# Generate N random samples from a log-normal distribution
+# Generate N random samples 
+## from a log-normal distribution
 sl <- rlnorm(N, mu, sigma)
-lognormal_plot <- ggplot(data.frame(samples=sl), aes(sl)) + geom_histogram() + 
-      ggtitle("Log-normal distribution\n") + ylim(0,25000) + xlim(0,2000)
-# Generate N random samples from a normal distribution, 
+lognormal_plot <- ggplot(data.frame(samples=sl), 
+aes(sl)) + geom_histogram() + 
+      ggtitle("Log-normal distribution\n") + 
+      ylim(0,25000) + xlim(0,2000)
+# Generate N random samples 
+# from a normal distribution, 
 # and then exponentiate them
 sn <- exp(rnorm(N, mu, sigma))
-normalplot <- ggplot(data.frame(samples=sn), aes(sn)) + geom_histogram() + 
-      ggtitle("Exponentiated samples of\n a normal distribution") + ylim(0,25000) + xlim(0,2000)
+normalplot <- ggplot(data.frame(samples=sn), 
+aes(sn)) + geom_histogram() + 
+      ggtitle("Exponentiated samples of
+      \n a normal distribution") + 
+      ylim(0,25000) + xlim(0,2000)
 ```
 
 
@@ -806,7 +904,8 @@ We can now verify whether our predicted datasets look more similar to the real d
 
 ```{r message=FALSE, warning=FALSE, fig.height=4,fig.cap="\\label{fig:lognppc}Posterior predictive check."}
 pp_check(m2_logn, nsamples = 100)+
-  theme(text = element_text(size=16),legend.text=element_text(size=16))
+  theme(text = element_text(size=16),
+  legend.text=element_text(size=16))
 ```
 
 ```{r echo=TRUE,message=FALSE,results="hide",cache=TRUE}
