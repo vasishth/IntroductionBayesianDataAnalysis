@@ -599,41 +599,6 @@ ggplot(tibble(y = c(0, 1)), aes(y)) +
 ```
 
 
-# The expectation and variance of an RV
-
-The expectation of a discrete random variable $Y$ with probability mass function f(y), is defined as
-
-\begin{equation}
-E[Y] = \sum_y y \cdot f(y)
-\end{equation}
-
-**Example**: Toss a fair coin once. The possible events are Tails (represented as 0) and Heads (represented as 1), each with equal probability, 0.5. The expectation is: 
-
-\begin{equation}
-E[Y] = \sum_y y \cdot f(y) = 0\cdot 0.5 + 1\cdot 0.5 = 0.5 
-\end{equation}
-
-
-The variance is defined as:
-
-\begin{equation}
-Var(Y) = E[Y^2]-E[Y]^2
-\end{equation}
-
-In the **binomial**, $Y \sim {n \choose k} \theta^k (1-\theta)^{n-k}$:
-
-- The expectation: $E[Y] = n\theta$ 
-  - Estimated by $\hat\theta = \frac{k}{n}$
-- The variance: $Var(Y) = n\theta (1-\theta)$
-  - Estimated by $Var(y) = n\hat\theta (1-\hat\theta)$
-
-In the **normal**, $Y\sim Normal(\mu,\sigma)$:
-
-- The expectation: $E[Y] = \int y f(y)\, dy = \mu$ 
-  - Estimated by  $\hat\mu = \bar{y}=\frac{\sum y}{n}$
-- The variance: $Var(Y) = \sigma^2$
-  - Estimated by $\hat\sigma^2  = s^2 = \frac{\sum (y_i-\bar{y})^2}{n-1}$
-
 # The likelihood function (Binomial)
 
 The **likelihood function** refers to the PMF  $p(k|n,\theta)$, treated as a function of $\theta$. 
@@ -752,6 +717,12 @@ or
 \begin{equation}
 \ell (\mu,\sigma|x) = \sum_{i=1}^n log(Normal(x_i,\mu,\sigma))
 \end{equation}
+
+# The expectation and variance of an RV
+
+Read section 1.4.1 of chapter 1 of the textbook, and (optionally) chapter 2 of the linear modeling lecture notes here: 
+
+https://github.com/vasishth/LM
 
 # Bivariate/multivariate distributions
 
