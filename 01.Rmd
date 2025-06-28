@@ -1,15 +1,26 @@
 ---
 title: "Chapter 1: Foundations"
 author: "Shravan Vasishth (vasishth.github.io)"
-date: "Textbook: https://bruno.nicenboim.me/bayescogsci/"
+date: "June 2025"
 output: 
-  html_document
+  html_document:
+    theme: flatly
 fontsize: 12pt
 geometry: "a4paper,right=8.5cm,left=1cm,bottom=2cm,top=2cm"
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, echo=FALSE, results='asis'}
+cat('
+<style>
+body {
+  margin-right: 120px;
+}
+</style>
+')
 ```
 
 \Large
@@ -22,26 +33,29 @@ Introduction to Bayesian Data Analysis for Cognitive Science
 
 Nicenboim, Schad, Vasishth
 
-https://bruno.nicenboim.me/bayescogsci/
+- Online version: https://bruno.nicenboim.me/bayescogsci/
+- Source code: https://github.com/bnicenboim/bayescogsci
+- Physical book: [here](https://www.routledge.com/Introduction-to-Bayesian-Data-Analysis-for-Cognitive-Science/Nicenboim-Schad-Vasishth/p/book/9780367359331)
 
-https://github.com/bnicenboim/bayescogsci
+**Be sure to read the textbook's chapter 1 in addition to watching this lecture**.
 
 # Introduction: Motivation for this lecture
 
 - Whenever we collect data, an implicit assumption is that the data are being generated from a **random variable**.
 - Understanding the basic properties of random variables is of key importance when learning statistical modeling.
-- The ideas and concepts in this lecture are often not taught in statistics courses in linguistics and psychology (I never was).
-- The usual kind of cookbook approach to teaching statistics leads to all kinds of misunderstandings that
-  have a snowball effect and are a big part of the cause for the replication crisis and all the chaos we see so often in empirical work in linguistics and psychology.  
+- The ideas and concepts in this lecture are often not taught in statistics courses in linguistics and psychology.
+- The commonly used cookbook approach to teaching statistics leads to all kinds of misunderstandings that
+  have a snowball effect and are a big part of the cause for the replication crisis and other problems in inference 
+  that we see so often in empirical work in linguistics and psychology.  
 
-It only takes about a day to understand these materials, but understanding the content here will positively 
+It only takes about a day to understand these materials, but the content here will positively 
 impact your ability to carry out statistical modeling and data analysis. 
 
 # Discrete random variables
 
-A random variable $X$ is a function $X : \Omega \rightarrow \mathbb{R}$ that associates to each outcome $\omega \in \Omega$ exactly one number $X(\omega) = x$.
+A random variable $X$ is a function $X : \Omega \rightarrow \mathbb{R}$ that associates to each **outcome** $\omega \in \Omega$ exactly one number $X(\omega) = x$.
 
-$S_X$ is all the $x$'s (all the possible values of X, the **support of X**). I.e., $x \in S_X$. We can also sloppily write $X \in S_X$. 
+$S_X$ is all the $x$'s (all the possible values of X, the **support of X**). I.e., $x \in S_X$.
 
 ## An example of a discrete RV
 
@@ -146,8 +160,8 @@ extraDistr::pbern(0, prob = 0.5)
 
 ## Another example of a discrete random variable: The binomial
 
-- Consider tossing a coin 10 times (number of trials, `size` in R). 
-- When number of trials (size) is 1, we have a Bernoulli; when we have size greater than 1, we have a Binomial.
+- Consider carrying out a single experiment where you toss a coin 10 times (the number of trials, `size` in R). 
+- When the number of trials (size) is 1, we have a Bernoulli; when we have size greater than 1, we have a Binomial.
 
 
 $$\theta^{x}(1-\theta)^{1-x}$$ where $$S_X=\{0,1\}$$
@@ -212,22 +226,24 @@ ggplot(tibble(x = c(0, 10)), aes(x)) +
 
 **1. Generate random data: rbinom**
 
-n: number of experiments done (\textbf{Note}: we used n for trials above)
+- n: number of experiments done (**Note**: in the binomial pdf, n stands for the number of trials). In R, n is 
+called the number of observations.
+- size: the number of times the coin was tossed in each experiment (the number of trials)
 
-size: the number of times the coin was tossed in each experiment
+Example: 10 separate experiments, each with 1 trial:
 
 ```{r}
 rbinom(n = 10, size = 1, prob = 0.5)
 ## equivalent to: rbern(10,0.5)
 ```
 
-Compare: 
+Example: 10 separate experiments, each with 10 trials: 
 
 ```{r}
 rbinom(n = 10, size = 10, prob = 0.5)
 ```
 
-**2. Compute probabilities of particular events (0,1,\dots,10 successes when n=10): dbinom**
+**2. Compute probabilities of particular events (0,1,...,10 successes when n=10): dbinom**
 
 ```{r}
 probs <- round(dbinom(0:10, size = 10, 
@@ -291,7 +307,7 @@ ggplot(invcdf, aes(
 ```
 
 These four functions are the d-p-q-r family of functions, and are available for all
-the distributions available in R (e.g., poisson, geometric, normal, beta, uniform, gamma, exponential, cauchy,  etc.).
+the distributions available in R (e.g., Poisson, geometric, normal, beta, uniform, gamma, exponential, Cauchy,  etc.).
 
 # Continuous random variables
 
@@ -305,7 +321,7 @@ In coin tosses, H and T are discrete possible outcomes.
  X \sim f(\cdot)
 \end{equation}
 
-means that the random variable $X$ has PDF $f(\cdot)$. 
+means that the random variable $X$ is assumed to have PDF $f(\cdot)$. 
 
 For example, if we say that $X\sim Normal(\mu,\sigma)$, we are assuming that the PDF is
 
@@ -315,7 +331,7 @@ f(x\mid \mu, \sigma)= \frac{1}{\sqrt{2\pi \sigma^2}} \exp\left[-\frac{(x-\mu)^2}
 
 where $-\infty<x<+\infty$
 
-We can **truncate** the normal distribution such that $S_X$ is bounded between some lower bound and upper bound--this comes later.
+We can **truncate** the normal distribution such that $S_X$ is bounded between some lower bound and/or upper bound--this comes later.
 
 ## The normal random variable
 
@@ -474,7 +490,11 @@ So, in our example above,
 
 ```{r}
 (k<-1/integrate(g, lower = -Inf, upper = +Inf)$value)
-## compare
+```
+
+The above number is just $\frac{1}{\sqrt{2 \pi \sigma^2}}$, where $\sigma=1$:
+
+```{r}
 1/(sqrt(2*pi*1))
 ```
 
@@ -705,6 +725,7 @@ sum(dnorm(x,mean=0,sd=1,log=TRUE))
 sum(dnorm(x,mean=10,sd=1,log=TRUE))
 ```
 
+Model 1 has higher likelihood than Model 2, so we'd prefer to assume that the data are better characterized by Model 1 than 2 (neither may be the true model!).
 
 More generally, for independent and identically distributed data $x=x_1,\dots,x_n$:
 
@@ -877,20 +898,7 @@ p_{X\mid Y} (1\mid 0) =& \frac{p_{X,Y}(1,0)}{p_Y(0)}\\
 \end{split}	
 \end{equation}
 
-```{r echo=FALSE, results="asis",eval=FALSE}
-y0 <- c("$0.062$", rep("", 6))
-y1 <- rep("", 7)
-conddistrn <- rbind(y0, y1)
-colnames(conddistrn) <- paste("$x=", 1:7, "$", sep = "")
-rownames(conddistrn) <- c("$p_{X|Y(x|y=0)}$", "$p_{X|Y(x|y=1)}$")
-
-kableExtra::kable(conddistrn,
-  digits = 3, booktabs = TRUE,
-  escape = FALSE,
-  vline = "", # format="latex",
-  caption = "A table for listing conditional distributions of X given Y."
-)
-```
+As an exercise, figure out the conditional distribution of X given Y, and the conditional distribution of Y given X. 
 
 
 ## Continuous bivariate distributions
