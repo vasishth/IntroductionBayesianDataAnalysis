@@ -1,13 +1,24 @@
 ---
 title: "Chapter 2: Introduction to Bayesian Data Analysis"
 author: "Shravan Vasishth (vasishth.github.io)"
-date: "Textbook: https://bruno.nicenboim.me/bayescogsci/"
+date: "June 2025"
 output: 
-  pdf_document
-toc: true
+  html_document:
+    theme: flatly
 fontsize: 12pt
 geometry: "a4paper,right=8.5cm,left=1cm,bottom=2cm,top=2cm"
 ---
+
+
+```{r, echo=FALSE, results='asis'}
+cat('
+<style>
+body {
+  margin-right: 120px;
+}
+</style>
+')
+```
 
 
 ```{r setup, include=FALSE}
@@ -26,13 +37,15 @@ Introduction to Bayesian Data Analysis for Cognitive Science
 
 Nicenboim, Schad, Vasishth
 
-https://bruno.nicenboim.me/bayescogsci/
+- Online version: https://bruno.nicenboim.me/bayescogsci/
+- Source code: https://github.com/bnicenboim/bayescogsci
+- Physical book: [here](https://www.routledge.com/Introduction-to-Bayesian-Data-Analysis-for-Cognitive-Science/Nicenboim-Schad-Vasishth/p/book/9780367359331)
 
-https://github.com/bnicenboim/bayescogsci
+**Be sure to read the textbook's chapter 2 in addition to watching this lecture**.
 
 # Bayes' rule
 
-Recall Bayes' rule: When $A$ and $B$ are observable discrete events (such as "it has been raining" or "the streets are wet"), we can state the rule as follows:
+Bayes' rule: When $A$ and $B$ are observable discrete events (such as "it has been raining" or "the streets are wet"), we can state the rule as follows:
 
 Bayes' rule in terms of discrete events:
 
@@ -55,7 +68,7 @@ The above statement can be rewritten in words as follows:
 
 The terms here have the following meaning. We elaborate on each point with an example below.
 
-* The *Posterior*, $p(\boldsymbol{\Theta}|\boldsymbol{y})$, is the probability distribution of the parameters conditional on the data.
+* The *Posterior*, $p(\boldsymbol{\Theta}|\boldsymbol{y})$, is the probability distribution of the parameter(s) conditional on the data.
 
 
 * The *Likelihood*, $p(\boldsymbol{y}|\boldsymbol{\Theta}$) is as described in chapter 1: it is the PMF (discrete case) or the PDF (continuous case) expressed as a function of $\boldsymbol{\Theta}$.
@@ -69,15 +82,17 @@ Two examples will clarify all these terms.
 
 # An analytical example (Beta-Binomial)
 
-Recall our cloze probability example earlier. Subjects are shown sentences like
+Consider the following experiment. Subjects are shown the following sentence just once. 
+The number  of trials is therefore 100.
 
 "It's raining.  I'm going to take the ..."
 
-- Assume n=100 subjects
+- Assume that we have 100 subjects
 - 80 subjects complete the sentence with "umbrella"
 - The estimated cloze probability or predictability (given the preceding context) would be $\hat\theta=\frac{80}{100}=0.8$. 
 
-The variability of the estimated means under repeated sampling, given different sample sizes:
+The variability of the estimated probability under repeated sampling (100 experiments), 
+given different sample sizes (number of trials, or size). First, consider a 100 experiments with 10 independent trials each.
 
 ```{r}
 estimated_means <- rbinom(100, 
@@ -86,7 +101,7 @@ estimated_means <- rbinom(100,
 sd(estimated_means)
 ```
 
-Compare with:
+Compare with a much larger number of trials (100):
 
 ```{r}
 estimated_means <- rbinom(100, 
@@ -95,9 +110,9 @@ estimated_means <- rbinom(100,
 sd(estimated_means)
 ```
 
-The repeated runs of the (simulated) experiment are giving us different point estimates of $\theta$, and the variability in the estimate under repeated sampling depends on the sample size.
+The repeated runs of the (simulated) experiment are giving us different point estimates of $\theta$, and the variability in the estimate of $\theta$ under repeated sampling depends on the sample size.
 
-What if we treat $\theta$ as a random variable? Suppose that $\theta \sim Unif(0,1)$.
+What if we treat $\theta$ as a random variable? Suppose that $\theta \sim Uniform(0,1)$.
 
 Now, if we were to run our simulated experiments again and again, there would be *two* sources of variability in the estimate of the parameter: the data as well as the uncertainty associated with $\theta$.
 
@@ -111,7 +126,7 @@ sd(estimated_means)
 
 The higher standard deviation is now coming from the uncertainty associated with the $\theta$ parameter. 
 
-Supposse $\theta \sim Unif(0.3,0.8$:
+Suppose $\theta \sim Uniform(0.3,0.8)$. Now, the variability in the estimate is much smaller:
 
 ```{r}
 theta <- runif(100, min = 0.3, max = 0.8)
@@ -121,7 +136,7 @@ estimated_means <- rbinom(n=100,
 sd(estimated_means)
 ```
 
-In other words, the greater the uncertainty associated with the parameter $\theta$, the greater the variability in the estimated means from the data.
+In other words, the greater the prior uncertainty associated with the parameter $\theta$, the greater the variability in the estimated means from the data.
 
 - Frequentists: the true, unknown value of $\theta$ is some point value. 
 - Bayesians: $\theta$ is a random variable with a probability density/mass function associated with it. This PDF is called a prior distribution, and represents our prior belief or prior knowledge about possible values of this parameter. 
@@ -139,13 +154,19 @@ p(k|n,\theta) = \binom{n}
  - $k$ indicates the number of times "umbrella" is given as an answer
  - $n$ is the number of trials. 
  
- If we collect $100$ data points ($n=100$) and it turns out that $k = 80$, these data are now a fixed quantity. The only variable now in the PMF above is $\theta$:
+ If we collect $100$ data points and it turns out that $k = 80$, these data are now a fixed quantity. The only variable now in the PMF above is $\theta$:
 
 \begin{equation}
 p(k=80 | n= 100,  \theta) = \binom{100}{80} \theta^{80} (1-\theta)^{20}
 \end{equation}
 
 The above function is a now a continuous function of the value $\theta$, which has possible values ranging from $0$ to $1$. Compare this to the PMF of the binomial, which treats $\theta$ as a fixed value and defines a discrete distribution over the $n+1$ possible discrete values $k$ that we can observe (the possible number of successes).
+
+We can now rewrite the PMF as a likelihood function:
+
+\begin{equation}
+\mathcal{L}(\theta|k = 80, n = 100) = \binom{100}{80} \theta^{80} (1-\theta)^{20}
+\end{equation}
 
 We now find out, using Bayes' rule, the posterior distribution of $\theta$ given our data: $p(\theta|n,k)$. Missing: a prior distribution over the parameter $\theta$, which expresses our prior uncertainty about plausible values of $\theta$.
 
@@ -162,7 +183,7 @@ p(\theta|a,b)=  \frac{1}{B(a,b)} \theta^{a - 1} (1-\theta)^{b-1}
 \end{equation}
 
 
-The term $B(a,b)$ expands to $\int_0^1 \theta^{a-1}(1-\theta)^{b-1}\, \mathrm{d}\theta$, and is a normalizing constant that ensures that the \index{Area under the curve} area under the curve sums to one. 
+The term $B(a,b)$ expands to $\int_0^1 \theta^{a-1}(1-\theta)^{b-1}\, \mathrm{d}\theta$, and is the normalizing constant; it ensures that the \index{Area under the curve} area under the curve sums to one. 
 
 The beta distribution's parameters $a$ and $b$ can be interpreted as expressing our prior beliefs about the probability of success; $a$ represents the number of "successes", in our case, answers that are "umbrella" and $b$ the number of failures, the answers that are not "umbrella." The figure below shows the different beta distribution shapes given different values of $a$ and $b$.
 
@@ -210,9 +231,9 @@ qbeta(c(0.025, 0.975),
       shape2 = 10)
 ```
 
-In the figure above, we can see also the difference in uncertainty in these two examples graphically.
+In the figure above, we can also see the difference in uncertainty in these two examples graphically.
 
-Which prior should we choose? See online chapter on priors.
+Which prior should we choose? See the [online chapter on priors](https://bruno.nicenboim.me/bayescogsci/ch-priors.html).
 
 For the  moment, just for illustration, we choose the values $a=4$ and $b=4$ for the beta prior. Then, our prior for $\theta$ is the following beta PDF:
 
@@ -251,7 +272,6 @@ Since it is a constant, we can ignore it for now and focus on the two other term
 
 \begin{equation}
 p(\theta|n=100,k=80) \propto   [\theta^{80} (1-\theta)^{20} \times \theta^{3} (1-\theta)^{3} ]
-(\#eq:betaunpost3)
 \end{equation}
 
 A common way of writing the above equation is:
@@ -268,13 +288,13 @@ p(\theta|n=100,k=80) \propto   [\theta^{80+3} (1-\theta)^{20+3}] = \theta^{83} (
 
 The expression on the right-hand side corresponds to a beta distribution with parameters $a=84$, and $b=24$. 
 
-This becomes evident if we rewrite the right-hand side such that it represents the core part of a beta PDF. All that is missing is a normalizing constant.
+This becomes evident if we rewrite the right-hand side such that it represents the kernel of a beta PDF. All that is missing is a normalizing constant.
 
 \begin{equation}
 \theta^{83} (1-\theta)^{23} = \theta^{84-1} (1-\theta)^{24-1}
 \end{equation}
 
-This core part of any PDF or PMF is called the kernel of that distribution. Without a normalizing constant, the area under the curve will not sum to one. Let's check this:
+Without a normalizing constant, the area under the curve will not sum to one. Let's check this:
 
 ```{r}
 PostFun <- function(theta) {
@@ -327,7 +347,7 @@ To summarize, we:
 - started with data ($n=100, k=80$)
 - assumed a binomial likelihood
 - multiplied the likelihood function with the prior probability density function $\theta \sim \mathit{Beta}(4,4)$
-- obtained the posterior $p(\theta|n,k) \sim \mathit{Beta}(84,24)$
+- obtained the posterior $p(\theta|n,k) = \mathit{Beta}(84,24)$
 
 The constants were ignored when carrying out the multiplication; we say that we computed the posterior *up to proportionality*. 
 
@@ -514,7 +534,7 @@ One can incrementally gain information about a research question by using inform
 
 Suppose we are modeling the total number of regressions 
 (leftward eye movements) per word in an eyetracking study 
-(data from Vasishth et al., 2011):
+(data from [Vasishth et al., 2011)](https://osf.io/r3cg9/):
 
 
 ```{r}
@@ -537,9 +557,9 @@ summary(dat$value)
 f(x\mid \lambda) = \frac{\exp(-\lambda) \lambda^x}{x!}
 \end{equation}
 - The rate (the mean no.\ of regressions per word) $\lambda>0$ is unknown
-- $x\geq 0$ (a vector): the observed numbers of regressions per word are independent given $\lambda$
+- $x\geq 0$ (a vector): the observed numbers of regressions per word are assumed to be independent given $\lambda$ (**Note: this assumption is incorrect here, as we have repeated measures from each subject; however, we ignore this detail for now**).
 
-Simulated data (n=10, number of data points):
+Simulated data (n=10, number of independent data points):
 
 ```{r}
 (x<-rpois(n=10,lambda=3))
@@ -555,8 +575,6 @@ plot(x,dpois(x,lambda=3),ylab="Probability")
 - Suppose that prior research (or expert knowledge) suggests that the prior mean of $\lambda$ is 3 and prior variance for $\lambda$  is 1.5. 
 - The first step is to define a PDF for $\lambda$; this will reflect our prior belief, before seeing any new data. 
 - One good choice (but not the only possible choice!) is the gamma(a,b) distribution.
-
-**Note: I will talk about the choice of prior in Bayesian analyses later.**
 
 
 The gamma PDF (continuous) for some variable $x$ (parameters $a,b >0$):
@@ -580,7 +598,7 @@ Simulated data from Gamma(a=3,b=1):
 round(rgamma(n=10,shape=3,rate=1),2)
 ```
 
-Visualize the gamma PDF with a=3,b=1:
+Visualize the Gamma PDF with a=3,b=1:
 
 ```{r,echo=FALSE,fig.height=4}
 x<-seq(0,10,by=0.01)
@@ -686,8 +704,8 @@ This gives us the posterior **up to proportionality**:
 \end{split}
 \end{equation}
 
-- First, note that the gamma distribution in general is $Gamma(a,b) \propto \lambda^{a-1} \exp(-\lambda b)$. 
-- So it's enough to state the above as a gamma distribution with some updated parameters a*, b*.
+- The Gamma distribution in general is $Gamma(a,b) \propto \lambda^{a-1} \exp(-\lambda b)$. 
+- So it's enough to state the above as a Gamma distribution with some updated parameters a*, b*.
 
 If we equate $a^{*}-1=a-1+\sum_i^{n} x_i$ and $b^{*} = b+n$, we can rewrite the above as:
 
@@ -702,13 +720,13 @@ If we equate $a^{*}-1=a-1+\sum_i^{n} x_i$ and $b^{*} = b+n$, we can rewrite the 
 \begin{equation}
 k \int_{0}^{\infty} \lambda^{a^{*}-1} \exp(-\lambda b^{*})=1
 \end{equation}
-- Thus, the posterior has the form of  a gamma distribution with parameters 
+- Thus, the posterior has the form of a Gamma distribution with parameters 
 $a^{*}=a+\sum_i^{n} x_i, b^{*}=b+n$. Hence the Gamma distribution is a conjugate prior for the Poisson.
 
 
 ### Concrete example given data
 
-- Suppose the regressive eye movements from one subject on n=5 words is: $2,4,3,6,1$. 
+- Suppose the regressive eye movements from one subject on five words is: $2,4,3,6,1$. 
 - The prior we chose was Gamma(a=6,b=2). 
 - $\sum_i^{n} x_i = `r sum(c(2,4,3,6,1))`$ and sample size $n=5$.
 
@@ -730,7 +748,7 @@ Gamma(6+`r sum(c(2,4,3,6,1))`,2+5)\\
 -  We saw two examples of conjugate analyses: the binomial-beta and the Poisson-gamma.
 - In each example, we derived the posterior given a likelihood and a prior.
 
-Next: the posterior's mean is a weighted mean of the MLE and the prior mean.
+### The posterior's mean is a weighted mean of the MLE and the prior mean.
 
 
 We can express the posterior mean as a weighted sum of the prior mean and the maximum likelihood estimate of $\lambda$.
