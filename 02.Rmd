@@ -401,7 +401,7 @@ p_beta <- ggplot(data = tibble(theta = c(0, 1)), aes(theta)) +
     aes(linetype = "Scaled likelihood")
   ) +
   theme(legend.title = element_blank())
-p_beta
+p_beta + theme_bw()
 ```
 
 We can summarize the posterior distribution either graphically as we did above, or summarize it by computing the mean and the variance. The mean gives us an estimate of the  cloze probability of producing "umbrella" in that sentence (given the model, i.e., given the likelihood and prior):
@@ -422,7 +422,7 @@ qbeta(c(0.025, 0.975), shape1 = 84, shape2 = 24)
 
 Typically, we would summarize the results of a Bayesian analysis by displaying the posterior distribution of the parameter (or parameters) graphically, along with the above summary statistics: the mean, the standard deviation or variance, and the 95% credible interval. You will see many examples of such summaries later.
 
-### The posterior distribution is a compromise between the prior and the likelihood
+## The posterior distribution is a compromise between the prior and the likelihood
 
 Recall from the preceding sections that the $a$ and $b$ parameters in the beta distribution determine the shape of the prior distribution on the $\theta$ parameter.  Just for the sake of illustration, let's take four different beta priors, which reflect increasing prior certainty about $\theta$.
 
@@ -474,7 +474,7 @@ plots <- purrr::map(ab, function(p){
     fun = dbeta,
     args = list(shape1 = p[1], shape2 = p[2]),
     aes(linetype = "Prior")
-  ) +
+  ) + theme_bw() +
    xlab(expression(theta)) +
   ylab("density") +
   stat_function(
@@ -538,7 +538,8 @@ Suppose we are modeling the total number of regressions
 
 
 ```{r}
-dat<-read.table(file="data/TRCexample.txt",header=TRUE)
+dat<-read.table(file="data/TRCexample.txt",
+      header=TRUE)
 head(dat,n=3)
 ```
 
@@ -724,7 +725,7 @@ k \int_{0}^{\infty} \lambda^{a^{*}-1} \exp(-\lambda b^{*})=1
 $a^{*}=a+\sum_i^{n} x_i, b^{*}=b+n$. Hence the Gamma distribution is a conjugate prior for the Poisson.
 
 
-### Concrete example given data
+## Concrete example given data
 
 - Suppose the regressive eye movements from one subject on five words is: $2,4,3,6,1$. 
 - The prior we chose was Gamma(a=6,b=2). 
@@ -748,7 +749,7 @@ Gamma(6+`r sum(c(2,4,3,6,1))`,2+5)\\
 -  We saw two examples of conjugate analyses: the binomial-beta and the Poisson-gamma.
 - In each example, we derived the posterior given a likelihood and a prior.
 
-### The posterior's mean is a weighted mean of the MLE and the prior mean.
+## The posterior's mean is a weighted mean of the MLE and the prior mean
 
 
 We can express the posterior mean as a weighted sum of the prior mean and the maximum likelihood estimate of $\lambda$.
@@ -817,7 +818,7 @@ as $n$ approaches infinity, the posterior variance will approach zero: more data
 
 
 
-### Stepping back
+# Stepping back
 
 - We saw two examples where we can do the computations to derive the posterior using simple algebra. 
 - There are several other such simple cases. 
@@ -837,4 +838,4 @@ Some sampling approaches are:
 - Metropolis-Hastings
 - Hamiltonian Monte Carlo
 
-Youtube lecture: https://youtu.be/ymuLt6LBTwY
+Youtube lecture on sampling algorithms: https://youtu.be/ymuLt6LBTwY
